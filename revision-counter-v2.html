@@ -1,0 +1,755 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Revision Counter</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: transparent;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    padding: 16px;
+  }
+
+  .widget {
+    width: 100%;
+    max-width: 420px;
+    background: #fff;
+    border: 1px solid #e8e8e8;
+    border-radius: 16px;
+    overflow: hidden;
+  }
+
+  /* Setup Screen */
+  .setup-screen {
+    padding: 40px 24px;
+    text-align: center;
+    display: none;
+  }
+
+  .setup-screen.active { display: block; }
+
+  .setup-icon {
+    font-size: 48px;
+    margin-bottom: 16px;
+  }
+
+  .setup-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: #1a1a1a;
+    margin-bottom: 8px;
+  }
+
+  .setup-desc {
+    font-size: 13px;
+    color: #999;
+    margin-bottom: 24px;
+    line-height: 1.5;
+  }
+
+  .setup-input {
+    width: 100%;
+    max-width: 280px;
+    height: 44px;
+    border: 2px solid #e0e0e0;
+    border-radius: 12px;
+    padding: 0 16px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    color: #1a1a1a;
+    text-align: center;
+    outline: none;
+    transition: border-color 0.2s;
+    margin-bottom: 16px;
+  }
+
+  .setup-input:focus { border-color: #6366f1; }
+
+  .setup-input::placeholder { color: #ccc; }
+
+  .setup-btn {
+    display: inline-block;
+    padding: 12px 32px;
+    background: #1a1a1a;
+    color: #fff;
+    border: none;
+    border-radius: 12px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .setup-btn:hover { background: #333; }
+  .setup-btn:active { transform: scale(0.97); }
+  .setup-btn:disabled { background: #ccc; cursor: not-allowed; }
+
+  /* Main Counter Screen */
+  .counter-screen {
+    display: none;
+  }
+
+  .counter-screen.active { display: block; }
+
+  /* Header */
+  .header {
+    padding: 20px 24px 16px;
+    border-bottom: 1px solid #f0f0f0;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+  }
+
+  .header-left {}
+
+  .project-name {
+    font-size: 11px;
+    font-weight: 600;
+    color: #999;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    margin-bottom: 4px;
+  }
+
+  .title {
+    font-size: 16px;
+    font-weight: 700;
+    color: #1a1a1a;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .edit-name-btn {
+    background: none;
+    border: none;
+    font-size: 12px;
+    color: #ccc;
+    cursor: pointer;
+    padding: 4px;
+    margin-top: 4px;
+  }
+
+  .edit-name-btn:hover { color: #888; }
+
+  /* Counter Display */
+  .counter-section {
+    padding: 28px 24px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+  }
+
+  .counter-ring {
+    position: relative;
+    width: 140px;
+    height: 140px;
+  }
+
+  .counter-ring svg {
+    transform: rotate(-90deg);
+    width: 140px;
+    height: 140px;
+  }
+
+  .ring-bg {
+    fill: none;
+    stroke: #f0f0f0;
+    stroke-width: 8;
+  }
+
+  .ring-fill {
+    fill: none;
+    stroke-width: 8;
+    stroke-linecap: round;
+    transition: stroke-dashoffset 0.6s cubic-bezier(0.22, 1, 0.36, 1), stroke 0.3s;
+  }
+
+  .ring-fill.safe { stroke: #6366f1; }
+  .ring-fill.warning { stroke: #f59e0b; }
+  .ring-fill.danger { stroke: #ef4444; }
+
+  .counter-number {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+  }
+
+  .count-current {
+    font-size: 42px;
+    font-weight: 700;
+    color: #1a1a1a;
+    line-height: 1;
+    transition: transform 0.2s;
+  }
+
+  .count-current.bump { transform: scale(1.15); }
+
+  .count-max {
+    font-size: 13px;
+    color: #999;
+    font-weight: 500;
+    margin-top: 2px;
+  }
+
+  /* Status Message */
+  .status-msg {
+    font-size: 13px;
+    font-weight: 600;
+    padding: 6px 14px;
+    border-radius: 20px;
+    transition: all 0.3s;
+  }
+
+  .status-msg.safe { background: #ede9fe; color: #6366f1; }
+  .status-msg.warning { background: #fef3c7; color: #d97706; }
+  .status-msg.danger { background: #fee2e2; color: #dc2626; }
+  .status-msg.over { background: #dc2626; color: #fff; animation: pulse 1.5s infinite; }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+  }
+
+  /* Buttons */
+  .btn-group {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+  }
+
+  .btn {
+    border: none;
+    border-radius: 12px;
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .btn:active { transform: scale(0.95); }
+
+  .btn-minus {
+    width: 44px;
+    height: 44px;
+    background: #f5f5f5;
+    color: #888;
+    font-size: 20px;
+  }
+
+  .btn-minus:hover { background: #eee; }
+
+  .btn-plus {
+    width: 64px;
+    height: 64px;
+    background: #1a1a1a;
+    color: #fff;
+    font-size: 28px;
+    border-radius: 16px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  }
+
+  .btn-plus:hover { background: #333; box-shadow: 0 6px 16px rgba(0,0,0,0.2); }
+
+  .btn-reset {
+    width: 44px;
+    height: 44px;
+    background: #f5f5f5;
+    color: #888;
+    font-size: 14px;
+  }
+
+  .btn-reset:hover { background: #fee2e2; color: #ef4444; }
+
+  /* Footer */
+  .footer {
+    padding: 14px 24px;
+    border-top: 1px solid #f0f0f0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .max-setting {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: #888;
+    font-weight: 500;
+  }
+
+  .max-input {
+    width: 44px;
+    height: 30px;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    text-align: center;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    color: #1a1a1a;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  .max-input:focus { border-color: #6366f1; }
+
+  .last-updated {
+    font-size: 11px;
+    color: #ccc;
+    font-weight: 500;
+  }
+
+  /* History */
+  .history-toggle { padding: 0 24px 4px; text-align: center; }
+
+  .history-btn {
+    background: none;
+    border: none;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 11px;
+    color: #bbb;
+    cursor: pointer;
+    padding: 4px 8px;
+    font-weight: 500;
+  }
+
+  .history-btn:hover { color: #888; }
+
+  .history-panel {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease;
+    padding: 0 24px;
+  }
+
+  .history-panel.open {
+    max-height: 200px;
+    padding: 0 24px 16px;
+    overflow-y: auto;
+  }
+
+  .history-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 0;
+    border-bottom: 1px solid #f8f8f8;
+    font-size: 12px;
+  }
+
+  .history-round { font-weight: 600; color: #555; }
+  .history-date { color: #bbb; font-weight: 400; }
+  .history-empty { text-align: center; padding: 12px 0; font-size: 12px; color: #ccc; }
+
+  /* Animation */
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .widget { animation: slideIn 0.4s ease-out; }
+</style>
+</head>
+<body>
+
+<div class="widget">
+
+  <!-- Setup Screen (shown if no project name set for this instance) -->
+  <div class="setup-screen" id="setupScreen">
+    <div class="setup-icon">✏️</div>
+    <div class="setup-title">Revision Counter</div>
+    <div class="setup-desc">
+      Enter this project's name to start tracking revisions.<br>
+      Each project page has its own independent counter.
+    </div>
+    <input type="text" class="setup-input" id="setupInput" placeholder="e.g. Cafe Bloom Branding" maxlength="60">
+    <br>
+    <button class="setup-btn" id="setupBtn" onclick="initProject()" disabled>Start Tracking</button>
+  </div>
+
+  <!-- Main Counter Screen -->
+  <div class="counter-screen" id="counterScreen">
+    <div class="header">
+      <div class="header-left">
+        <div class="project-name" id="projectName">PROJECT</div>
+        <div class="title">✏️ Revision Counter</div>
+      </div>
+      <button class="edit-name-btn" onclick="editName()" title="Change project name">✎ edit</button>
+    </div>
+
+    <div class="counter-section">
+      <div class="counter-ring">
+        <svg viewBox="0 0 140 140">
+          <circle class="ring-bg" cx="70" cy="70" r="58" />
+          <circle class="ring-fill safe" id="ringFill" cx="70" cy="70" r="58"
+            stroke-dasharray="364.4"
+            stroke-dashoffset="364.4" />
+        </svg>
+        <div class="counter-number">
+          <div class="count-current" id="countDisplay">0</div>
+          <div class="count-max" id="countMax">of 3</div>
+        </div>
+      </div>
+
+      <div class="status-msg safe" id="statusMsg">Revisions available</div>
+
+      <div class="btn-group">
+        <button class="btn btn-minus" onclick="decrement()" title="Undo">−</button>
+        <button class="btn btn-plus" onclick="increment()" title="Add revision">+</button>
+        <button class="btn btn-reset" onclick="resetCount()" title="Reset">↺</button>
+      </div>
+    </div>
+
+    <div class="history-toggle">
+      <button class="history-btn" onclick="toggleHistory()" id="historyBtn">▼ History</button>
+    </div>
+
+    <div class="history-panel" id="historyPanel">
+      <div id="historyList">
+        <div class="history-empty">No revisions yet</div>
+      </div>
+    </div>
+
+    <div class="footer">
+      <div class="max-setting">
+        Contract limit:
+        <input type="number" class="max-input" id="maxInput" value="3" min="1" max="99" onchange="updateMax()">
+      </div>
+      <div class="last-updated" id="lastUpdated"></div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  // ============================================
+  // INSTANCE ID DETECTION
+  // Goal: each embed block on different Notion pages 
+  // gets a unique ID automatically, without user input.
+  // ============================================
+
+  function getInstanceId() {
+    // Method 1: URL parameter (explicit, highest priority)
+    const params = new URLSearchParams(window.location.search);
+    const urlId = params.get('id');
+    if (urlId) return { id: urlId, name: params.get('name') || urlId.replace(/-/g, ' ') };
+
+    // Method 2: document.referrer (Notion page URL)
+    // When Notion embeds an iframe, referrer may contain the page URL
+    // which includes a unique page/block ID
+    if (document.referrer) {
+      try {
+        const refUrl = new URL(document.referrer);
+        // Extract Notion page ID from referrer path
+        const pathParts = refUrl.pathname.split('/').filter(Boolean);
+        if (pathParts.length > 0) {
+          const lastPart = pathParts[pathParts.length - 1];
+          // Notion URLs end with a 32-char hex ID (no dashes)
+          const idMatch = lastPart.match(/([a-f0-9]{32})$/);
+          if (idMatch) {
+            return { id: 'notion_' + idMatch[1], name: null };
+          }
+          // Fallback: use the full last path segment
+          return { id: 'ref_' + lastPart.substring(0, 40), name: null };
+        }
+      } catch(e) {}
+    }
+
+    // Method 3: Check if we're in an iframe and try to get unique context
+    // The iframe src might have been modified by Notion with unique params
+    try {
+      if (window.frameElement) {
+        const frameSrc = window.frameElement.src;
+        if (frameSrc) {
+          // Use the full iframe src as a unique key
+          const hash = simpleHash(frameSrc);
+          return { id: 'frame_' + hash, name: null };
+        }
+      }
+    } catch(e) {
+      // Cross-origin: can't access frameElement
+    }
+
+    // Method 4: Use a combination of available signals
+    // Even if individual signals aren't unique, combining them might help
+    const signals = [
+      window.location.href,
+      document.referrer,
+      screen.width + 'x' + screen.height,
+      new Date().getTimezoneOffset()
+    ].join('|');
+
+    // This won't differentiate between two embeds on different pages
+    // opened in the same browser, so we fall back to setup screen
+    return { id: null, name: null };
+  }
+
+  function simpleHash(str) {
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+      const char = str.charCodeAt(i);
+      hash = ((hash << 5) - hash) + char;
+      hash |= 0;
+    }
+    return Math.abs(hash).toString(36);
+  }
+
+  // ============================================
+  // STORAGE & STATE
+  // ============================================
+
+  let instanceId = null;
+  let projectName = '';
+  let count = 0;
+  let maxRevisions = 3;
+  let history = [];
+
+  function storageKey(suffix) {
+    return `rc_${instanceId}_${suffix}`;
+  }
+
+  function loadState() {
+    count = parseInt(localStorage.getItem(storageKey('count'))) || 0;
+    maxRevisions = parseInt(localStorage.getItem(storageKey('max'))) || 3;
+    history = JSON.parse(localStorage.getItem(storageKey('history')) || '[]');
+    projectName = localStorage.getItem(storageKey('name')) || '';
+  }
+
+  function saveState() {
+    localStorage.setItem(storageKey('count'), count);
+    localStorage.setItem(storageKey('max'), maxRevisions);
+    localStorage.setItem(storageKey('history'), JSON.stringify(history));
+    localStorage.setItem(storageKey('name'), projectName);
+  }
+
+  // ============================================
+  // INIT
+  // ============================================
+
+  function init() {
+    const detected = getInstanceId();
+
+    if (detected.id) {
+      // Auto-detected instance ID
+      instanceId = detected.id;
+      loadState();
+
+      if (projectName) {
+        // Already set up — show counter
+        showCounter();
+      } else if (detected.name) {
+        // ID from URL param with name
+        projectName = detected.name;
+        saveState();
+        showCounter();
+      } else {
+        // Auto-detected ID but no name yet — show setup
+        showSetup();
+      }
+    } else {
+      // Could not auto-detect — show setup screen
+      // User will enter project name, which becomes the ID
+      showSetup();
+    }
+  }
+
+  // ============================================
+  // SETUP SCREEN
+  // ============================================
+
+  function showSetup() {
+    document.getElementById('setupScreen').classList.add('active');
+    document.getElementById('counterScreen').classList.remove('active');
+
+    const input = document.getElementById('setupInput');
+    const btn = document.getElementById('setupBtn');
+
+    input.addEventListener('input', () => {
+      btn.disabled = input.value.trim().length === 0;
+    });
+
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && input.value.trim()) initProject();
+    });
+  }
+
+  function initProject() {
+    const input = document.getElementById('setupInput');
+    const name = input.value.trim();
+    if (!name) return;
+
+    // Use the name as the instance ID if none was auto-detected
+    if (!instanceId) {
+      instanceId = 'manual_' + name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+    }
+
+    projectName = name;
+    count = 0;
+    maxRevisions = 3;
+    history = [];
+    saveState();
+    showCounter();
+  }
+
+  // ============================================
+  // COUNTER SCREEN
+  // ============================================
+
+  function showCounter() {
+    document.getElementById('setupScreen').classList.remove('active');
+    document.getElementById('counterScreen').classList.add('active');
+
+    document.getElementById('projectName').textContent = projectName.toUpperCase();
+    document.getElementById('maxInput').value = maxRevisions;
+    render();
+  }
+
+  function editName() {
+    const newName = prompt('Edit project name:', projectName);
+    if (newName && newName.trim()) {
+      projectName = newName.trim();
+      document.getElementById('projectName').textContent = projectName.toUpperCase();
+      saveState();
+    }
+  }
+
+  // ============================================
+  // COUNTER LOGIC
+  // ============================================
+
+  function increment() {
+    count++;
+    const now = new Date();
+    const dateStr = now.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    const timeStr = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+    history.push({ round: count, date: `${dateStr}, ${timeStr}` });
+    saveState();
+    render();
+    bump();
+  }
+
+  function decrement() {
+    if (count <= 0) return;
+    count--;
+    history.pop();
+    saveState();
+    render();
+  }
+
+  function resetCount() {
+    if (count === 0) return;
+    if (!confirm('Reset revision count to 0?')) return;
+    count = 0;
+    history = [];
+    saveState();
+    render();
+  }
+
+  function updateMax() {
+    const val = parseInt(document.getElementById('maxInput').value);
+    if (val >= 1 && val <= 99) {
+      maxRevisions = val;
+      saveState();
+      render();
+    }
+  }
+
+  // ============================================
+  // RENDER
+  // ============================================
+
+  function render() {
+    const countDisplay = document.getElementById('countDisplay');
+    const countMax = document.getElementById('countMax');
+    const ringFill = document.getElementById('ringFill');
+    const statusMsg = document.getElementById('statusMsg');
+    const lastUpdated = document.getElementById('lastUpdated');
+
+    // Count
+    countDisplay.textContent = count;
+    countMax.textContent = `of ${maxRevisions}`;
+
+    // Ring
+    const circumference = 2 * Math.PI * 58;
+    const ratio = Math.min(count / maxRevisions, 1.0);
+    const offset = circumference - (ratio * circumference);
+    ringFill.style.strokeDashoffset = offset;
+
+    // State
+    let state;
+    if (count > maxRevisions) state = 'over';
+    else if (count === maxRevisions) state = 'danger';
+    else if (count >= maxRevisions - 1) state = 'warning';
+    else state = 'safe';
+
+    ringFill.className.baseVal = 'ring-fill ' + (state === 'over' ? 'danger' : state);
+
+    statusMsg.className = 'status-msg ' + state;
+    if (state === 'safe') statusMsg.textContent = `${maxRevisions - count} revisions remaining`;
+    else if (state === 'warning') statusMsg.textContent = `⚠️ Last revision included`;
+    else if (state === 'danger') statusMsg.textContent = `⚠️ Contract limit reached`;
+    else statusMsg.textContent = `🚨 ${count - maxRevisions} extra — charge additional fee`;
+
+    // Last updated
+    if (history.length > 0) {
+      lastUpdated.textContent = `Last: ${history[history.length - 1].date}`;
+    } else {
+      lastUpdated.textContent = '';
+    }
+
+    renderHistory();
+  }
+
+  function renderHistory() {
+    const list = document.getElementById('historyList');
+    if (history.length === 0) {
+      list.innerHTML = '<div class="history-empty">No revisions yet</div>';
+      return;
+    }
+    list.innerHTML = history.slice().reverse().map(h =>
+      `<div class="history-item">
+        <span class="history-round">Round ${h.round}</span>
+        <span class="history-date">${h.date}</span>
+      </div>`
+    ).join('');
+  }
+
+  function toggleHistory() {
+    const panel = document.getElementById('historyPanel');
+    const btn = document.getElementById('historyBtn');
+    panel.classList.toggle('open');
+    btn.textContent = panel.classList.contains('open') ? '▲ Hide history' : '▼ History';
+  }
+
+  function bump() {
+    const el = document.getElementById('countDisplay');
+    el.classList.add('bump');
+    setTimeout(() => el.classList.remove('bump'), 200);
+  }
+
+  // ============================================
+  // START
+  // ============================================
+  init();
+</script>
+</body>
+</html>
