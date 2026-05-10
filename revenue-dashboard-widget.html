@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Revenue Dashboard</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: transparent;
+    color: #1a1a1a;
+    padding: 20px;
+    min-height: 100vh;
+  }
+
+  .dashboard {
+    max-width: 800px;
+    margin: 0 auto;
+  }
+
+  /* Header */
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+  }
+
+  .header h2 {
+    font-size: 18px;
+    font-weight: 700;
+    color: #1a1a1a;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .header h2 span {
+    font-size: 20px;
+  }
+
+  .period-toggle {
+    display: flex;
+    gap: 4px;
+    background: #f0f0f0;
+    border-radius: 8px;
+    padding: 3px;
+  }
+
+  .period-btn {
+    padding: 6px 14px;
+    border: none;
+    background: transparent;
+    border-radius: 6px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px;
+    font-weight: 500;
+    color: #888;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .period-btn.active {
+    background: #fff;
+    color: #1a1a1a;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  }
+
+  /* Summary Cards */
+  .summary-cards {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+
+  .summary-card {
+    background: #fff;
+    border: 1px solid #e8e8e8;
+    border-radius: 12px;
+    padding: 16px;
+    transition: all 0.2s;
+  }
+
+  .summary-card:hover {
+    border-color: #d0d0d0;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  }
+
+  .card-label {
+    font-size: 11px;
+    font-weight: 500;
+    color: #999;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 6px;
+  }
+
+  .card-value {
+    font-size: 24px;
+    font-weight: 700;
+    color: #1a1a1a;
+  }
+
+  .card-change {
+    font-size: 11px;
+    font-weight: 600;
+    margin-top: 4px;
+    display: flex;
+    align-items: center;
+    gap: 3px;
+  }
+
+  .card-change.up { color: #22c55e; }
+  .card-change.down { color: #ef4444; }
+
+  /* Chart Container */
+  .chart-container {
+    background: #fff;
+    border: 1px solid #e8e8e8;
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 16px;
+  }
+
+  .chart-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: #666;
+    margin-bottom: 16px;
+  }
+
+  /* Bar Chart */
+  .chart {
+    display: flex;
+    align-items: flex-end;
+    gap: 8px;
+    height: 180px;
+    padding-bottom: 28px;
+    position: relative;
+  }
+
+  .chart-bar-group {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    height: 100%;
+    justify-content: flex-end;
+    position: relative;
+  }
+
+  .chart-bar {
+    width: 100%;
+    max-width: 40px;
+    border-radius: 6px 6px 2px 2px;
+    transition: all 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+    position: relative;
+    cursor: pointer;
+    min-height: 4px;
+  }
+
+  .chart-bar:hover {
+    filter: brightness(1.05);
+    transform: scaleY(1.02);
+    transform-origin: bottom;
+  }
+
+  .chart-bar.revenue {
+    background: linear-gradient(180deg, #4f46e5 0%, #6366f1 100%);
+  }
+
+  .chart-bar.expense {
+    background: linear-gradient(180deg, #e5e7eb 0%, #d1d5db 100%);
+  }
+
+  .chart-label {
+    position: absolute;
+    bottom: -24px;
+    font-size: 11px;
+    color: #999;
+    font-weight: 500;
+  }
+
+  .chart-tooltip {
+    position: absolute;
+    top: -32px;
+    background: #1a1a1a;
+    color: #fff;
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s;
+    z-index: 10;
+  }
+
+  .chart-bar-group:hover .chart-tooltip {
+    opacity: 1;
+  }
+
+  /* Grid Lines */
+  .chart-grid {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 28px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    pointer-events: none;
+  }
+
+  .grid-line {
+    border-bottom: 1px dashed #f0f0f0;
+    position: relative;
+  }
+
+  .grid-label {
+    position: absolute;
+    left: -36px;
+    bottom: -6px;
+    font-size: 10px;
+    color: #ccc;
+    font-weight: 500;
+  }
+
+  /* Legend */
+  .legend {
+    display: flex;
+    gap: 16px;
+    margin-top: 12px;
+    justify-content: center;
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    color: #888;
+    font-weight: 500;
+  }
+
+  .legend-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 2px;
+  }
+
+  .legend-dot.revenue { background: #6366f1; }
+  .legend-dot.expense { background: #d1d5db; }
+
+  /* Bottom Stats */
+  .bottom-stats {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+
+  .stat-card {
+    background: #fff;
+    border: 1px solid #e8e8e8;
+    border-radius: 12px;
+    padding: 16px;
+  }
+
+  .stat-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+  }
+
+  .stat-title {
+    font-size: 12px;
+    font-weight: 600;
+    color: #666;
+  }
+
+  .stat-badge {
+    font-size: 10px;
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 20px;
+  }
+
+  .stat-badge.green {
+    background: #dcfce7;
+    color: #16a34a;
+  }
+
+  .stat-badge.red {
+    background: #fee2e2;
+    color: #dc2626;
+  }
+
+  /* Top Clients Mini List */
+  .client-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .client-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .client-name {
+    font-size: 12px;
+    color: #555;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .client-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+  }
+
+  .client-amount {
+    font-size: 12px;
+    font-weight: 700;
+    color: #1a1a1a;
+  }
+
+  /* Progress Bar */
+  .progress-container {
+    margin-top: 8px;
+  }
+
+  .progress-label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    color: #999;
+    margin-bottom: 4px;
+  }
+
+  .progress-bar {
+    height: 6px;
+    background: #f0f0f0;
+    border-radius: 3px;
+    overflow: hidden;
+  }
+
+  .progress-fill {
+    height: 100%;
+    border-radius: 3px;
+    background: linear-gradient(90deg, #6366f1, #8b5cf6);
+    transition: width 1s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  /* Animation */
+  @keyframes slideUp {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .summary-cards, .chart-container, .bottom-stats {
+    animation: slideUp 0.5s ease-out forwards;
+  }
+
+  .chart-container { animation-delay: 0.1s; }
+  .bottom-stats { animation-delay: 0.2s; }
+
+  /* Responsive */
+  @media (max-width: 600px) {
+    .summary-cards { grid-template-columns: 1fr; }
+    .bottom-stats { grid-template-columns: 1fr; }
+    .card-value { font-size: 20px; }
+    body { padding: 12px; }
+  }
+</style>
+</head>
+<body>
+<div class="dashboard">
+
+  <!-- Header -->
+  <div class="header">
+    <h2><span>💰</span> Revenue Dashboard</h2>
+    <div class="period-toggle">
+      <button class="period-btn" onclick="setPeriod('6m')">6M</button>
+      <button class="period-btn active" onclick="setPeriod('12m')">12M</button>
+    </div>
+  </div>
+
+  <!-- Summary Cards -->
+  <div class="summary-cards">
+    <div class="summary-card">
+      <div class="card-label">Total Revenue</div>
+      <div class="card-value" id="totalRevenue">$38,400</div>
+      <div class="card-change up">↑ 24% vs last year</div>
+    </div>
+    <div class="summary-card">
+      <div class="card-label">This Month</div>
+      <div class="card-value" id="thisMonth">$4,200</div>
+      <div class="card-change up">↑ 12% vs last month</div>
+    </div>
+    <div class="summary-card">
+      <div class="card-label">Avg / Month</div>
+      <div class="card-value" id="avgMonth">$3,200</div>
+      <div class="card-change up">↑ 8% trend</div>
+    </div>
+  </div>
+
+  <!-- Chart -->
+  <div class="chart-container">
+    <div class="chart-title">Monthly Revenue vs Expenses</div>
+    <div style="padding-left: 36px; position: relative;">
+      <div class="chart-grid" id="chartGrid"></div>
+      <div class="chart" id="chart"></div>
+    </div>
+    <div class="legend">
+      <div class="legend-item"><div class="legend-dot revenue"></div>Revenue</div>
+      <div class="legend-item"><div class="legend-dot expense"></div>Expenses</div>
+    </div>
+  </div>
+
+  <!-- Bottom Stats -->
+  <div class="bottom-stats">
+    <div class="stat-card">
+      <div class="stat-header">
+        <div class="stat-title">Top Clients</div>
+        <div class="stat-badge green">Active</div>
+      </div>
+      <div class="client-list">
+        <div class="client-row">
+          <div class="client-name"><div class="client-dot" style="background:#6366f1"></div>Cafe Bloom</div>
+          <div class="client-amount">$8,200</div>
+        </div>
+        <div class="client-row">
+          <div class="client-name"><div class="client-dot" style="background:#8b5cf6"></div>Halo Studio</div>
+          <div class="client-amount">$6,400</div>
+        </div>
+        <div class="client-row">
+          <div class="client-name"><div class="client-dot" style="background:#a78bfa"></div>Lumiere</div>
+          <div class="client-amount">$5,100</div>
+        </div>
+        <div class="client-row">
+          <div class="client-name"><div class="client-dot" style="background:#c4b5fd"></div>Modern Hill</div>
+          <div class="client-amount">$3,800</div>
+        </div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-header">
+        <div class="stat-title">Collection Rate</div>
+        <div class="stat-badge green">87%</div>
+      </div>
+      <div class="progress-container">
+        <div class="progress-label">
+          <span>Collected</span>
+          <span>$33,400 / $38,400</span>
+        </div>
+        <div class="progress-bar">
+          <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+        </div>
+      </div>
+      <div style="margin-top: 12px;">
+        <div class="client-list">
+          <div class="client-row">
+            <div class="client-name" style="color:#ef4444;">⏳ Pending</div>
+            <div class="client-amount" style="color:#ef4444;">$3,200</div>
+          </div>
+          <div class="client-row">
+            <div class="client-name" style="color:#f59e0b;">🔔 Overdue</div>
+            <div class="client-amount" style="color:#f59e0b;">$1,800</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  // Sample data — 12 months
+  const data12m = {
+    labels: ['Jun','Jul','Aug','Sep','Oct','Nov','Dec','Jan','Feb','Mar','Apr','May'],
+    revenue: [2800, 3100, 2600, 3400, 3200, 3800, 4100, 2900, 3500, 3200, 4200, 4200],
+    expenses: [800, 900, 750, 1000, 850, 1100, 1200, 900, 950, 800, 1000, 1050]
+  };
+
+  const data6m = {
+    labels: ['Dec','Jan','Feb','Mar','Apr','May'],
+    revenue: [4100, 2900, 3500, 3200, 4200, 4200],
+    expenses: [1200, 900, 950, 800, 1000, 1050]
+  };
+
+  let currentPeriod = '12m';
+
+  function setPeriod(period) {
+    currentPeriod = period;
+    document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
+    event.target.classList.add('active');
+    renderChart();
+    updateSummary();
+  }
+
+  function renderChart() {
+    const data = currentPeriod === '12m' ? data12m : data6m;
+    const maxVal = Math.max(...data.revenue) * 1.2;
+    const chart = document.getElementById('chart');
+    const grid = document.getElementById('chartGrid');
+
+    // Grid lines
+    grid.innerHTML = '';
+    for (let i = 0; i < 4; i++) {
+      const line = document.createElement('div');
+      line.className = 'grid-line';
+      const label = document.createElement('span');
+      label.className = 'grid-label';
+      const val = Math.round(maxVal - (maxVal / 3) * i);
+      label.textContent = val >= 1000 ? `$${(val/1000).toFixed(0)}k` : `$${val}`;
+      line.appendChild(label);
+      grid.appendChild(line);
+    }
+
+    // Bars
+    chart.innerHTML = '';
+    data.labels.forEach((label, i) => {
+      const group = document.createElement('div');
+      group.className = 'chart-bar-group';
+
+      const tooltip = document.createElement('div');
+      tooltip.className = 'chart-tooltip';
+      tooltip.textContent = `$${data.revenue[i].toLocaleString()}`;
+
+      const barWrapper = document.createElement('div');
+      barWrapper.style.cssText = 'display:flex; gap:3px; align-items:flex-end; width:100%; justify-content:center; height:100%;';
+
+      const revenueBar = document.createElement('div');
+      revenueBar.className = 'chart-bar revenue';
+      revenueBar.style.height = '0%';
+
+      const expenseBar = document.createElement('div');
+      expenseBar.className = 'chart-bar expense';
+      expenseBar.style.height = '0%';
+      expenseBar.style.maxWidth = '20px';
+
+      const labelEl = document.createElement('div');
+      labelEl.className = 'chart-label';
+      labelEl.textContent = label;
+
+      barWrapper.appendChild(revenueBar);
+      barWrapper.appendChild(expenseBar);
+      group.appendChild(tooltip);
+      group.appendChild(barWrapper);
+      group.appendChild(labelEl);
+      chart.appendChild(group);
+
+      // Animate
+      requestAnimationFrame(() => {
+        setTimeout(() => {
+          revenueBar.style.height = `${(data.revenue[i] / maxVal) * 100}%`;
+          expenseBar.style.height = `${(data.expenses[i] / maxVal) * 100}%`;
+        }, i * 60);
+      });
+    });
+  }
+
+  function updateSummary() {
+    const data = currentPeriod === '12m' ? data12m : data6m;
+    const total = data.revenue.reduce((a, b) => a + b, 0);
+    const avg = Math.round(total / data.revenue.length);
+    const thisMonth = data.revenue[data.revenue.length - 1];
+
+    document.getElementById('totalRevenue').textContent = `$${total.toLocaleString()}`;
+    document.getElementById('thisMonth').textContent = `$${thisMonth.toLocaleString()}`;
+    document.getElementById('avgMonth').textContent = `$${avg.toLocaleString()}`;
+  }
+
+  // Init
+  renderChart();
+
+  // Animate progress bar
+  setTimeout(() => {
+    document.getElementById('progressFill').style.width = '87%';
+  }, 400);
+</script>
+</body>
+</html>
