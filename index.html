@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>오늘의 응원</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            width: 100%;
+            height: 100%;
+            background: transparent;
+            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            overflow: hidden;
+        }
+
+        .widget-container {
+            width: 100%;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 8px;
+        }
+
+        .quote-card {
+            width: 100%;
+            max-width: 600px;
+            min-height: 200px;
+            background: #FFFFFF;
+            border: 1px solid #E5E8EB;
+            border-radius: 16px;
+            padding: 32px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        .quote-card:hover .refresh-btn {
+            opacity: 1;
+        }
+
+        .quote-mark {
+            font-size: 32px;
+            font-weight: 700;
+            color: #3182F6;
+            line-height: 1;
+            margin-bottom: 12px;
+            font-family: Georgia, serif;
+        }
+
+        .quote-text {
+            font-size: 20px;
+            font-weight: 500;
+            color: #191F28;
+            line-height: 1.6;
+            letter-spacing: -0.3px;
+            flex: 1;
+            display: flex;
+            align-items: center;
+            animation: fadeIn 0.5s ease;
+        }
+
+        .author-section {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 16px;
+        }
+
+        .author-line {
+            width: 24px;
+            height: 1px;
+            background-color: #B0B8C1;
+        }
+
+        .author-name {
+            font-size: 13px;
+            font-weight: 400;
+            color: #8B95A1;
+            letter-spacing: -0.2px;
+        }
+
+        .refresh-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 32px;
+            height: 32px;
+            border: none;
+            background: rgba(49, 130, 246, 0.08);
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: all 0.2s ease;
+        }
+
+        .refresh-btn:hover {
+            background: rgba(49, 130, 246, 0.15);
+            transform: rotate(180deg);
+        }
+
+        .refresh-btn svg {
+            width: 16px;
+            height: 16px;
+            stroke: #3182F6;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(8px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @media (max-width: 480px) {
+            .quote-card {
+                padding: 24px;
+            }
+            .quote-text {
+                font-size: 18px;
+            }
+            .refresh-btn {
+                opacity: 1;
+            }
+        }
+
+        @media (hover: none) and (pointer: coarse) {
+            .refresh-btn {
+                opacity: 1;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="widget-container">
+        <div class="quote-card" onclick="changeQuote()">
+            <div>
+                <div class="quote-mark">"</div>
+                <div class="quote-text" id="quoteText">로딩 중...</div>
+            </div>
+            <div class="author-section">
+                <div class="author-line"></div>
+                <div class="author-name" id="authorName">...</div>
+            </div>
+            <button class="refresh-btn" onclick="event.stopPropagation(); changeQuote();" aria-label="새 명언 보기">
+                <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/>
+                    <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/>
+                    <path d="M21 3v5h-5"/>
+                    <path d="M3 21v-5h5"/>
+                </svg>
+            </button>
+        </div>
+    </div>
+
+    <script>
+        const quotes = [
+            { text: "오늘 할 수 있는 일을 내일로 미루지 마라.", author: "벤자민 프랭클린" },
+            { text: "성공의 비밀은 시작하는 것이다.", author: "마크 트웨인" },
+            { text: "천 리 길도 한 걸음부터.", author: "노자" },
+            { text: "나는 천재가 아니다. 단지 다른 사람보다 더 오래 한 문제와 씨름할 뿐이다.", author: "알베르트 아인슈타인" },
+            { text: "위대한 일은 결코 쉽게 이루어지지 않는다.", author: "세네카" },
+            { text: "내가 더 멀리 보았다면, 그것은 거인들의 어깨 위에 서 있었기 때문이다.", author: "아이작 뉴턴" },
+            { text: "행동 없는 비전은 백일몽일 뿐이다.", author: "일본 속담" },
+            { text: "꿈을 꾸어라. 그리고 그 꿈을 위해 노력하라.", author: "월트 디즈니" },
+            { text: "오늘 걷지 않으면 내일은 뛰어야 한다.", author: "헨리 데이비드 소로" },
+            { text: "시작이 반이다.", author: "아리스토텔레스" },
+            { text: "성공은 매일 반복되는 작은 노력의 합이다.", author: "로버트 콜리어" },
+            { text: "하루를 시작하는 가장 좋은 방법은 어제보다 더 나은 사람이 되겠다고 결심하는 것이다.", author: "헬렌 켈러" },
+            { text: "기회는 준비된 자에게만 온다.", author: "루이 파스퇴르" },
+            { text: "성공한 사람과 그렇지 않은 사람의 차이는 노력의 차이다.", author: "빈스 롬바르디" },
+            { text: "꿈을 향해 자신 있게 나아가라. 자신이 상상한 삶을 살아라.", author: "헨리 데이비드 소로" },
+            { text: "성공의 비결은 목적의 일관성이다.", author: "벤자민 디즈레일리" },
+            { text: "행동하는 자는 실수할 수도 있다. 그러나 행동하지 않는 자는 이미 실수한 것이다.", author: "요한 볼프강 폰 괴테" },
+            { text: "오늘이라는 날을 헛되이 보내지 마라.", author: "토마스 칼라일" },
+            { text: "당신의 시간은 한정되어 있다. 그러니 다른 사람의 인생을 사느라 시간을 낭비하지 마라.", author: "스티브 잡스" },
+            { text: "내일의 꿈을 이루는 가장 큰 한계는 오늘의 의심이다.", author: "프랭클린 D. 루스벨트" },
+            { text: "오늘은 당신의 남은 인생의 첫날이다.", author: "애비 호프만" },
+            { text: "성공은 준비된 자만이 잡을 수 있다.", author: "헨리 포드" },
+            { text: "지금 시작하라. 완벽함을 추구하지 마라.", author: "마틴 루터 킹" },
+            { text: "삶의 가장 큰 영광은 절대 넘어지지 않는 데 있는 것이 아니라, 넘어질 때마다 일어서는 데 있다.", author: "넬슨 만델라" },
+            { text: "당신이 할 수 있다고 믿든 없다고 믿든, 당신이 옳다.", author: "헨리 포드" },
+            { text: "성공은 끝이 아니며 실패는 치명적이지 않다. 중요한 것은 계속하려는 용기다.", author: "윈스턴 처칠" },
+            { text: "끝나기 전까지는 끝난 게 아니다.", author: "요기 베라" },
+            { text: "천천히 가도 멈추지만 않으면 도착한다.", author: "공자" },
+            { text: "한 번의 실패와 마지막 실패를 혼동하지 마라.", author: "F. 스콧 피츠제럴드" },
+            { text: "나는 실패한 게 아니다. 효과가 없는 방법 10,000개를 발견한 것이다.", author: "토마스 에디슨" },
+            { text: "성공은 99%의 실패에서 나온다.", author: "혼다 소이치로" },
+            { text: "가장 큰 영광은 결코 넘어지지 않는 것이 아니라, 넘어질 때마다 일어서는 것이다.", author: "공자" },
+            { text: "넘어지는 것은 부끄러운 것이 아니다. 일어나지 않는 것이 부끄러운 것이다.", author: "일본 속담" },
+            { text: "포기하지 마라. 보통 시간이 길게 느껴지는 그 순간이 마지막 직전이다.", author: "헬렌 켈러" },
+            { text: "성공한 사람들은 항상 두 가지 특성을 가지고 있다: 인내심과 결단력.", author: "나폴레옹 힐" },
+            { text: "오랫동안 꿈을 그리는 사람은 마침내 그 꿈을 닮아간다.", author: "앙드레 말로" },
+            { text: "위대한 것은 강요받지 않는다. 그것은 인내와 노력의 결과다.", author: "존 러스킨" },
+            { text: "기다림은 인생에서 가장 어려운 일 중 하나이지만, 가장 큰 보상을 가져온다.", author: "조이스 메이어" },
+            { text: "성공하려면 끝까지 견뎌야 한다.", author: "윈스턴 처칠" },
+            { text: "실패는 성공으로 가는 길의 한 부분이다.", author: "빅터 키암" },
+            { text: "하지 않으려는 마음을 이기는 것이 진정한 승리다.", author: "플라톤" },
+            { text: "고통이 없으면 얻는 것도 없다.", author: "벤자민 프랭클린" },
+            { text: "포기는 영원한 패배다.", author: "마이크 디트카" },
+            { text: "물방울이 바위를 뚫는 것은 그 힘 때문이 아니라 끊임없이 떨어지기 때문이다.", author: "오비디우스" },
+            { text: "인내는 쓰지만 그 열매는 달다.", author: "장 자크 루소" },
+            { text: "한 걸음씩, 한 걸음씩 가다 보면 어느새 정상이다.", author: "한국 속담" },
+            { text: "오늘 흘리는 땀이 내일의 미소가 된다.", author: "일본 속담" },
+            { text: "인생에서 가장 큰 영광은 결코 실패하지 않는 데 있지 않고, 실패할 때마다 다시 일어서는 데 있다.", author: "공자" },
+            { text: "성공의 비결은 단 한 가지, 끝까지 가는 것이다.", author: "알베르트 슈바이처" },
+            { text: "기회는 준비된 자에게만 온다.", author: "루이 파스퇴르" },
+            { text: "배움을 멈추는 자는 늙는다. 스무 살이건 여든 살이건.", author: "헨리 포드" },
+            { text: "교육은 미래로 가는 여권이다. 내일은 오늘 준비하는 자의 것이다.", author: "말콤 X" },
+            { text: "성찰하지 않는 삶은 살 가치가 없다.", author: "소크라테스" },
+            { text: "내가 아는 한 가지는 내가 아무것도 모른다는 것이다.", author: "소크라테스" },
+            { text: "지식에 투자하는 것이 가장 큰 이자를 가져온다.", author: "벤자민 프랭클린" },
+            { text: "교육의 뿌리는 쓰지만 그 열매는 달다.", author: "아리스토텔레스" },
+            { text: "한 권의 책을 깊이 읽는 자가 백 권을 훑어본 자보다 낫다.", author: "공자" },
+            { text: "지식이 적을수록 확신은 커진다. 지식이 많을수록 의심도 커진다.", author: "찰스 다윈" },
+            { text: "배우는 것을 멈추는 순간 가르치는 것도 멈춘다.", author: "하워드 가드너" },
+            { text: "독서는 마음의 양식이다.", author: "키케로" },
+            { text: "오늘 배운 것이 내일의 자신을 만든다.", author: "공자" },
+            { text: "공부는 머리로 하는 것이 아니라 엉덩이로 하는 것이다.", author: "한국 속담" },
+            { text: "어제의 나보다 오늘의 내가 1cm라도 나아져 있다면 그것이 진정한 성장이다.", author: "김난도" },
+            { text: "젊어서 배우지 않으면 늙어서 후회한다.", author: "주자" },
+            { text: "공부는 자기 자신을 위한 것이다.", author: "공자" },
+            { text: "내가 살아온 인생에서 배운 가장 중요한 것은 끊임없이 배우는 자세다.", author: "워런 버핏" },
+            { text: "한 번의 실패는 다음 성공을 위한 준비다.", author: "마크 트웨인" },
+            { text: "지식은 힘이지만, 지혜는 그것을 쓸 줄 아는 능력이다.", author: "프랜시스 베이컨" },
+            { text: "아는 것이 힘이다.", author: "프랜시스 베이컨" },
+            { text: "오늘 공부할 수 있다는 것은 큰 행운이다.", author: "공자" },
+            { text: "공부에 왕도는 없다.", author: "유클리드" },
+            { text: "어려운 길이 결국 쉬운 길이다.", author: "다산 정약용" },
+            { text: "배우고 때때로 익히면 또한 기쁘지 아니한가.", author: "공자" },
+            { text: "젊었을 때의 1시간은 늙어서의 100시간보다 가치 있다.", author: "벤자민 프랭클린" },
+            { text: "교육은 양동이를 채우는 것이 아니라 불을 지피는 것이다.", author: "윌리엄 버틀러 예이츠" },
+            { text: "자신을 믿어라. 그러면 어떻게 살아야 할지 알게 될 것이다.", author: "요한 볼프강 폰 괴테" },
+            { text: "할 수 있다고 믿는 사람은 그렇게 된다.", author: "시어도어 루스벨트" },
+            { text: "당신이 할 수 있다고 생각하든, 할 수 없다고 생각하든, 당신이 옳다.", author: "헨리 포드" },
+            { text: "가장 큰 위험은 위험을 감수하지 않는 것이다.", author: "마크 저커버그" },
+            { text: "오늘이라는 날은 두 번 다시 오지 않는다.", author: "단테 알리기에리" },
+            { text: "당신의 시간은 한정되어 있다.", author: "스티브 잡스" },
+            { text: "타인의 기준이 아닌 자신의 기준으로 살아라.", author: "랄프 왈도 에머슨" },
+            { text: "내일 죽을 것처럼 살고, 영원히 살 것처럼 배워라.", author: "마하트마 간디" },
+            { text: "삶이 너에게 레몬을 주거든 레모네이드를 만들어라.", author: "데일 카네기" },
+            { text: "비교는 기쁨의 도둑이다.", author: "시어도어 루스벨트" },
+            { text: "당신은 당신이 생각하는 그 사람이다.", author: "부처" },
+            { text: "마음은 모든 것이다. 당신이 생각하는 것이 당신이 된다.", author: "부처" },
+            { text: "행복은 준비된 마음에서 비롯된다.", author: "달라이 라마" },
+            { text: "어려움이 나를 강하게 만든다.", author: "프리드리히 니체" },
+            { text: "자신감은 성공의 첫 번째 비결이다.", author: "랄프 왈도 에머슨" },
+            { text: "마음의 한계가 곧 능력의 한계다.", author: "나폴레옹 힐" },
+            { text: "두려움은 우리가 무엇을 해야 하는지 알려준다.", author: "스티븐 킹" },
+            { text: "오늘 하루를 어제와 다르게 살자.", author: "헨리 포드" },
+            { text: "용기란 두려움이 없는 것이 아니라, 두려움을 이기는 것이다.", author: "마크 트웨인" },
+            { text: "어제는 역사다. 내일은 미스터리다. 오늘은 선물이다.", author: "엘리노어 루스벨트" },
+            { text: "행복은 습관이다. 그것을 몸에 익혀라.", author: "엘버트 허버드" },
+            { text: "당신의 잠재력은 한계가 없다.", author: "짐 론" },
+            { text: "최고의 복수는 엄청난 성공이다.", author: "프랭크 시나트라" },
+            { text: "포기하지 마라. 위대함은 인내에서 나온다.", author: "윈스턴 처칠" },
+            { text: "당신이 어디로 가는지가 어디서 왔는지보다 중요하다.", author: "엘라 휠러 윌콕스" }
+        ];
+
+        let currentIndex = -1;
+
+        function getRandomQuote() {
+            let newIndex;
+            do {
+                newIndex = Math.floor(Math.random() * quotes.length);
+            } while (newIndex === currentIndex && quotes.length > 1);
+            currentIndex = newIndex;
+            return quotes[newIndex];
+        }
+
+        function changeQuote() {
+            const quote = getRandomQuote();
+            const textEl = document.getElementById('quoteText');
+            const authorEl = document.getElementById('authorName');
+
+            textEl.style.animation = 'none';
+            authorEl.style.animation = 'none';
+            
+            requestAnimationFrame(() => {
+                textEl.style.animation = 'fadeIn 0.5s ease';
+                authorEl.style.animation = 'fadeIn 0.5s ease';
+                textEl.textContent = quote.text;
+                authorEl.textContent = quote.author;
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', changeQuote);
+    </script>
+</body>
+</html>
